@@ -1,0 +1,146 @@
+<?php
+/**
+ * Veritrans VT Direct Model Standard
+ *
+ * @category   Mage
+ * @package    vtdirect/form.phtml
+ * this template is rendered when Veritrans payment method is chosen. This is description about Veritrans Payment Method
+ */
+?>
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.css" media="screen" />
+
+<script type="text/javascript">
+
+	var env = "<?php echo Mage::getStoreConfig('payment/vtdirect/environment'); ?>";
+	var js  = '';
+
+	if ( env == 'production' ) {
+	 js = "//api.veritrans.co.id/v2/assets/js/veritrans.min.js";
+
+	} else {
+	 js = "//api.sandbox.veritrans.co.id/v2/assets/js/veritrans.min.js";
+	}
+
+	$j.getScript(js, function(){
+		$j.getScript('//cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.js', function() {
+
+			if($j('#checkout-payment-method-load .radio:checked').val() == 'vtdirect') {
+				$j('#p_method_vtdirect').click();
+			}
+
+			$j('#checkout-payment-method-load .radio').click(function(event){
+
+				if($j(this).val()==='vtdirect'){
+					$j("#payment-buttons-container .button").removeAttr("onClick");
+				}else{
+					$j("#payment-buttons-container .button").attr("onClick","payment.save()");
+				}
+
+			})
+
+			var env = "<?php echo Mage::getStoreConfig('payment/vtdirect/environment'); ?>";
+			function openDialog(url) {
+				$j.fancybox.open({
+					href: url,
+					type: 'iframe',
+					autoDimensions: false,
+					autoSize: false,
+					width: '400',
+					height: '600',
+					closeBtn: false,
+					scrolling : 'no',
+					modal: true
+				});
+			}
+
+			function closeDialog() {
+				$j.fancybox.close();
+			}
+
+			function callback(response) {
+				if (response.redirect_url) {
+				console.log('Open Dialog 3Dsecure');
+				openDialog(response.redirect_url);
+
+				} else if (response.status_code == '200') {
+					closeDialog();
+
+					$j("#token-id").val(response.token_id);
+					payment.save();
+				} else {
+				closeDialog();
+				$j('#payment-buttons-container .button').removeAttr('disabled');
+				$j('#message').text(response.status_message);
+				$j("#payment-buttons-container .button").attr("onClick","payment.save()");
+				}
+			}
+				if ( env == 'production' ) {
+					Veritrans.url = "https://api.veritrans.co.id/v2/token";
+				} else {
+					Veritrans.url = "https://api.sandbox.veritrans.co.id/v2/token";
+				}
+
+			Veritrans.client_key = "<?php echo Mage::getStoreConfig('payment/vtdirect/client_key_v2');?>";
+			var card = function(){
+				return {
+				'card_number'     : $j("#card-number").val(),
+				'card_exp_month'  : $j("#card-expiry-month").val(),
+				'card_exp_year'   : $j("#card-expiry-year").val(),
+				'card_cvv'        : $j("#card-cvv").val(),
+
+				'secure'       : true,
+				'bank'       : '<?php echo Mage::getStoreConfig('payment/vtdirect/bank'); ?>',
+				'gross_amount'   : $j("#price").val()
+				}
+			};
+
+			$j('#checkout-step-payment .button').click(function(event){
+
+				if($j('#checkout-payment-method-load .radio:checked').val() == 'vtdirect'){
+					$j("#payment-buttons-container .button").removeAttr("onClick");
+
+					$j(this).attr("disabled", "disabled");
+					Veritrans.token(card, callback);
+					return false;
+				}
+			});
+
+		});
+	});
+
+</script>
+
+<?php $_code=$this->getMethodCode() ?>
+<ul class="form-list" id="payment_form_<?php echo $this->getMethodCode() ?>" style="display:none;">
+    <li>
+	<img src="<?php echo $this->getSkinUrl('images/Credit Card.png') ?>"/>
+	</li>
+	<li>
+		<label for="<?php echo $_code ?>_cc_number" class="required"><em>*</em><?php echo $this->__('Credit Card Number') ?></label>
+		<div class="input-box">
+		<input id="card-number" size="20" class="input-text validate-cc-number validate-cc-type card-number validate-length maximum-length-16 minimum-length-16" type="text" value="4811111111111114"/>
+		</div>
+	</li>
+	<li>
+		<label class="required"><?php echo $this->__('Expiration Date (MM/YYYY)') ?></label>
+		<div class="input-box">
+		<input id="card-expiry-month" class="validate-length maximum-length-2 minimum-length-2" size="2" type="text" value="01"/>
+		<span> / </span>
+		<input id="card-expiry-year" class="validate-length maximum-length-4 minimum-length-4" size="4" type="text" value="2020"/>
+		</div>
+    </li>
+	<li>
+		<label  for="<?php echo $_code ?>_cc_cid" class="required"><em>*</em><?php echo $this->__('Security Code (CVV)') ?></label>
+		<div class="input-box">
+			<div class="v-fix">
+				<input id="card-cvv" size="3" type="password" value="123"/>
+			</div>
+			<a href="#" class="cvv-what-is-this"><?php echo $this->__('What is this?') ?></a>
+		</div>
+    </li>
+	<li>
+		<!-- Additional Field -->
+		<input id="price" name="price" type="hidden" value="<?php echo Mage::getSingleton('checkout/cart')->getQuote()->getGrandTotal(); ?>"/>
+		<input id="token-id" name="payment[token-id]" type="hidden" />
+    </li>
+</ul>
