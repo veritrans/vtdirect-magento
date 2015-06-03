@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<config>
+  <sections>
+    <payment>
+      <groups>
+        <permatava translate="label comment" module="permatava">
+          <label>Veritrans Permata Virtual Account</label>
+          <frontend_type>text</frontend_type>
+          <sort_order>1</sort_order>
+          <show_in_default>1</show_in_default>
+          <show_in_website>1</show_in_website>
+          <show_in_store>2</show_in_store>
+          <fields>
+                <active translate="label">
+                  <label>Enabled</label>
+                  <config_path>payment/permatava/active</config_path>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <sort_order>1</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>0</show_in_store>
+                </active>                
+                <title translate="label">
+                  <label>Title</label>
+                  <config_path>payment/permatava/title</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>2</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </title>
+                <server_key_v2>
+                  <label>Server Key</label>
+                  <config_path>payment/permatava/server_key_v2</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>8</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </server_key_v2>
+                <environment>
+                  <label>Environment</label>
+                  <config_path>payment/permatava/environment</config_path>
+                  <frontend_type>select</frontend_type>
+                  <source_model>permatava/system_config_source_api_environment</source_model>
+                  <sort_order>9</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <comment>Change to 'Production' once your store is going live</comment>
+                </environment>
+                <conversion_rate>
+                  <label>Conversion rate</label>
+                  <config_path>payment/permatava/conversion_rate</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>10</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <comment>Current rate to idr</comment>
+                </conversion_rate>    
+                <sort_order>
+                  <label>Sort Order</label>
+                  <config_path>payment/permatava/sort_order</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>27</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>0</show_in_store>
+                </sort_order>                                     
+          </fields>
+        </permatava>
+      </groups>
+    </payment>
+  </sections>
+</config>
