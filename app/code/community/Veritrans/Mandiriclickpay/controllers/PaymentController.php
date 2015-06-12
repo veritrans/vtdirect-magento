@@ -1,19 +1,20 @@
 <?php
 /**
- * Veritrans VT Direct permata virtual account Payment Controller
+ * Veritrans VT Direct Payment Controller
  *
  * @category   Mage
- * @package    Mage_Veritrans_Permatava_PaymentController
+ * @package    Mage_Veritrans_Vtdirect_PaymentController
  * This class is used for handle redirection after placing order.
  * function redirectAction -> charge Veritrans VT Direct
  * function responseAction -> when payment at Veritrans VT Direct is completed or
  * failed, the page will be redirected to this function,
  * you must set this url in your Veritrans MAP merchant account.
+ * http://yoursite.com/vtdirect/payment/notification
  */
 
 require_once(Mage::getBaseDir('lib') . '/veritrans-php/Veritrans.php');
 
-class Veritrans_Permatava_PaymentController
+class Veritrans_Mandiriclickpay_PaymentController
     extends Mage_Core_Controller_Front_Action {
 
   /**
@@ -22,75 +23,7 @@ class Veritrans_Permatava_PaymentController
   protected function _getCheckout() {
     return Mage::getSingleton('checkout/session');
   }
-  // new email order
-	public function send_new_order_mail($storeId, $order, $billing , $payment, $email, $name, $isGuest, $virtual='', $amount){
-		$storeId=Mage::app()->getStore()->getStoreId();
-		$copyTo = Mage::getStoreConfig('sales_email/order/copy_to', $storeId);
-        $copyMethod = Mage::getStoreConfig('sales_email/order/copy_method', $storeId);
-		// Start store emulation process
-        $appEmulation = Mage::getSingleton('core/app_emulation');
-        $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
 
-        try {
-            // Retrieve specified view block from appropriate design package (depends on emulated store)
-            $paymentBlock = Mage::helper('payment')->getInfoBlock($payment)
-                ->setIsSecureMode(true);
-            $paymentBlock->getMethod()->setStore($storeId);
-            $paymentBlockHtml = $paymentBlock->toHtml();
-        } catch (Exception $exception) {
-            // Stop store emulation process
-            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
-            throw $exception;
-        }
-
-        // Stop store emulation process
-        $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
-
-        // Retrieve corresponding email template id and customer name
-        if ($isGuest) {
-            $templateId = Mage::getStoreConfig('sales_email/order/guest_template', $storeId);
-        } else {
-            $templateId = Mage::getStoreConfig('sales_email/order/template', $storeId);
-        }
-
-		$mailer = Mage::getModel('core/email_template_mailer');
-        $emailInfo = Mage::getModel('core/email_info');
-        $emailInfo->addTo($email, $name);
-        if ($copyTo && $copyMethod == 'bcc') {
-            // Add bcc to customer email
-            foreach ($copyTo as $email) {
-                $emailInfo->addBcc($email);
-            }
-        }
-        $mailer->addEmailInfo($emailInfo);
-
-        // Email copies are sent as separated emails if their copy method is 'copy'
-        if ($copyTo && $copyMethod == 'copy') {
-            foreach ($copyTo as $email) {
-                $emailInfo = Mage::getModel('core/email_info');
-                $emailInfo->addTo($email);
-                $mailer->addEmailInfo($emailInfo);
-            }
-        }
-
-        // Set all required params and send emails
-		if(!empty($virtual)){
-      $url = "https://support.veritrans.co.id/hc/en-us/articles/204700774-How-to-pay-with-Bank-transfer-Permata-Virtual-Account";
-			$virtual="<h4>Please transfer IDR ".$amount." payment with transfer method to this Permata bank virtual account number:  ".$virtual."</h4><br/> <h4>Payment instruction can be viewed <a href=".$url.">here</a></h4>";
-		}
-        $mailer->setSender(Mage::getStoreConfig('sales_email/order/identity', $storeId));
-        $mailer->setStoreId($storeId);
-        $mailer->setTemplateId($templateId);
-        $mailer->setTemplateParams(array(
-                'order'        => $order,
-                'virtual'      => $virtual,
-                'billing'      => $billing,
-                'payment_html' => $paymentBlockHtml
-            )
-        );
-        $mailer->send();
-	}
-	
   // The redirect action is triggered when someone places an order,
   // redirecting to Veritrans payment page.
   public function redirectAction() {
@@ -98,16 +31,18 @@ class Veritrans_Permatava_PaymentController
     $order = Mage::getModel('sales/order')
         ->loadByIncrementId($orderIncrementId);
     $sessionId = Mage::getSingleton('core/session');
-	
+
 	/* need to set payment data to Mage::getSingleton('core/session')->setPaymentData(); when checkout */
-	 
+
+	$pay= Mage::getSingleton('core/session')->getPaymentData();
+
     Veritrans_Config::$isProduction =
-        Mage::getStoreConfig('payment/permatava/environment') == 'production'
+        Mage::getStoreConfig('payment/mandiriclickpay/environment') == 'production'
         ? true : false;
 
     Veritrans_Config::$serverKey =
-        Mage::getStoreConfig('payment/permatava/server_key_v2');
-    
+        Mage::getStoreConfig('payment/mandiriclickpay/server_key_v2');
+
 
     $transaction_details = array();
     $transaction_details['order_id'] = $orderIncrementId;
@@ -172,12 +107,12 @@ class Veritrans_Permatava_PaymentController
           'quantity' => $each->getQtyToInvoice(),
           'name'     => substr($each->getName(),0,50)
         );
-      
+
       if ($item['quantity'] == 0) continue;
       // error_log(print_r($each->getProductOptions(), true));
       $item_details[] = $item;
     }
-    
+
     $num_products = count($item_details);
 
     unset($each);
@@ -201,7 +136,7 @@ class Veritrans_Permatava_PaymentController
         );
       $item_details[] =$shipping_item;
     }
-    
+
     if ($shipping_tax_amount > 0) {
       $shipping_tax_item = array(
           'id' => 'SHIPPING_TAX',
@@ -227,7 +162,7 @@ class Veritrans_Permatava_PaymentController
     if ($current_currency != 'IDR') {
       $conversion_func = function ($non_idr_price) {
           return $non_idr_price *
-              Mage::getStoreConfig('payment/permatava/conversion_rate');
+              Mage::getStoreConfig('payment/vtdirect/conversion_rate');
         };
       foreach ($item_details as &$item) {
         $item['price'] =
@@ -242,39 +177,46 @@ class Veritrans_Permatava_PaymentController
       unset($each);
     }
 
+    $mandiri= Mage::getSingleton('core/session')->getPaymentData();
 
     $payloads = array();
     $payloads['transaction_details'] = $transaction_details;
     $payloads['item_details']        = $item_details;
     $payloads['customer_details']    = $customer_details;
-    $payloads['payment_type']		 = 'bank_transfer';
-	  $payloads['bank_transfer']		 = array(
-											'bank' => "permata",
+    $payloads['payment_type']		     = 'mandiri_clickpay';
+	  $payloads['mandiri_clickpay']		 = array(
+											'card_number'=>$mandiri['cc_number'],
+                      'input1'=>$mandiri['input1'],
+                      'input2'=>$mandiri['input2'],
+                      'input3'=>$mandiri['input3'],
+                      'token'=>$mandiri['token']
 										);
 
     try {
       $redirUrl = Veritrans_VtDirect::charge($payloads);
-	  Mage::log($redirUrl,null,'permatava_veritrans.log');
-      if($redirUrl->status_code=='201') {
-        /* send an order email when redirecting to payment page although payment
-       has not been completed. */
-		$order->setState(Mage::getStoreConfig('payment/permatava/'),true,
+	  Mage::log($redirUrl,null,'vtdirect_veritrans.log',true);
+      if($redirUrl->status_code=='200' || $redirUrl->status_code=='201') {
+
+
+		$order->setState(Mage::getStoreConfig('payment/vtdirect/'),true,
 			'New order, waiting for payment.');
-		$this->send_new_order_mail(Mage::app()->getStore()->getStoreId(), $order, $order_billing_address, $order->getPayment(), $customer_details['email'] , $order_billing_address->getName(), $order->getCustomerIsGuest(), $redirUrl->permata_va_number, $redirUrl->gross_amount);
-		
+		$order->sendNewOrderEmail();
 		$order->setEmailSent(true);
-		
-    // Redirected by Veritrans, if ok
-    Mage::getSingleton('checkout/session')->unsQuoteId();
-		//set va number and gross amount for email and success page.
-    Mage::getSingleton('core/session')->setVA($redirUrl->permata_va_number);
-    Mage::getSingleton('core/session')->setAmount($redirUrl->gross_amount);
-    //remove item
-    foreach( Mage::getSingleton('checkout/session')->getQuote()->getItemsCollection() as $item ){
+
+        // Redirected by Veritrans, if ok
+        Mage::getSingleton('checkout/session')->unsQuoteId();
+
+		foreach( Mage::getSingleton('checkout/session')->getQuote()->getItemsCollection() as $item ){
+
+			Mage::getSingleton('checkout/cart')->removeItem( $item->getId() )->save();
+		}
+
+           //delete item from cart
+        foreach( Mage::getSingleton('checkout/session')->getQuote()->getItemsCollection() as $item ){
           Mage::getSingleton('checkout/cart')->removeItem( $item->getId() )->save();
-    }
-		
-		Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/success', array('_secure'=>true));
+        }
+        
+        Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/success', array('_secure'=>true));
       }
       else {
         // There is a problem in the response we got
@@ -283,39 +225,13 @@ class Veritrans_Permatava_PaymentController
       }
     }
     catch (Exception $e) {
-    Mage::log($e,null,'vtdirect_veritrans.log',true);      
-    error_log($e->getMessage());
+		Mage::log($e,null,'vtdirect_veritrans.log');
+      error_log($e->getMessage());
 	  Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/failure', array('_secure'=>true));
     }
   }
 
-  // The response action is triggered when your gateway sends back a response
-  // after processing the customer's payment, we will not update to success
-  // because success is valid when notification (security reason)
- public function responseAction() {
-    //var_dump($_POST); use for debugging value.
-    if($_GET['order_id']) {
-      $orderId = $_GET['order_id']; // Generally sent by gateway
-      $status = $_GET['status_code'];
-      if($status == '200' && !is_null($orderId) && $orderId != '') {
-        // Redirected by Veritrans, if ok
-        Mage::getSingleton('checkout/session')->unsQuoteId();
-        Mage_Core_Controller_Varien_Action::_redirect(
-            'checkout/onepage/success', array('_secure'=>false));
-      }
-      else {
-        // There is a problem in the response we got
-        $this->cancelAction();
-        Mage_Core_Controller_Varien_Action::_redirect(
-            'checkout/onepage/failure', array('_secure'=>true));
-      }
-    }
-    else{
-      Mage_Core_Controller_Varien_Action::_redirect('');
-    }
-  }
-
-  // The cancel action is triggered when an order is to be cancelled
+    // The cancel action is triggered when an order is to be cancelled
   public function cancelAction() {
     if (Mage::getSingleton('checkout/session')->getLastRealOrderId()) {
         $order = Mage::getModel('sales/order')->loadByIncrementId(
@@ -327,7 +243,7 @@ class Veritrans_Permatava_PaymentController
         }
     }
   }
-
+  
   /**
    * Convert 2 digits coundry code to 3 digit country code
    *

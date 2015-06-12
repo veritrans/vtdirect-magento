@@ -1,0 +1,97 @@
+<?php
+/**
+ * Veritrans Mandiriclickpay Model Standard
+ *
+ * @category   Mage
+ * @package    mandiriclickpay/form.phtml
+ * this template is rendered when Veritrans payment method is chosen. This is description about Veritrans Payment Method
+ */
+?>
+
+<script type="text/javascript">
+
+	$j(function(){
+  
+  updateInput1();
+
+  $j('#card-number').keyup(function(){
+    updateInput1();
+  });
+
+  $j('#input3').val(random5digit());
+
+  function updateInput1(){
+    var ccNumber = $j('#card-number-mandiri').val();
+    if(ccNumber.length > 9) {
+      $j('#input1').val(ccNumber.substring(ccNumber.length, ccNumber.length-10));
+    }
+  }
+
+  function paddy(n, p, c) {
+    var pad_char = typeof c !== 'undefined' ? c : '0';
+    var pad = new Array(1 + p).join(pad_char);
+    return (pad + n).slice(-pad.length);
+  }
+
+  function random5digit(){
+    return paddy(Math.floor(Math.random() * 99999), 5); 
+  }
+
+});
+</script>
+
+
+<?php $_code=$this->getMethodCode();
+$current_currency = Mage::app()->getStore()->getCurrentCurrencyCode();
+$conversion_rate = Mage::getStoreConfig('payment/mandiriclickpay/conversion_rate');
+$base_gross = Mage::getSingleton('checkout/cart')->getQuote()->getGrandTotal();
+$gross = ($current_currency != 'IDR' ? $base_gross * $conversion_rate : $base_gross); 
+
+ ?>
+
+<ul class="form-list" id="payment_form_<?php echo $this->getMethodCode() ?>" style="display:none;">
+
+    <li>
+	<img src="<?php echo $this->getSkinUrl('images/Mandiri Clickpay.png') ?>"/>
+	</li>
+	<li>
+
+	<ol>
+      <li>Activate your Mandiri Token</li>
+      <li>Insert Mandiri Token password</li>
+      <li>Click 3 when Mandiri Token displays APPLI.</li>
+      <li>Fill "Input 1": Last 10 digit of your Mandiri Debit card</li>
+      <li>Fill "Input 2": Transaction Value</li>
+      <li>Fill "Input 3": Request Number</li>
+      <li>Fill your Mandiri Token response into “Challenge Token”</li>
+    </ol>	
+		<label for="<?php echo $_code ?>_cc_number" class="required"><em>*</em><?php echo $this->__('Card Number') ?></label>
+		<div class="input-box">
+		<input id="card-number-mandiri" size="16" class="input-text card-number validate-length maximum-length-16 minimum-length-16" name="payment[cc_number]" type="text" value="4111111111111111"/>
+		</div>
+	</li>
+	<li>
+		<label  for="<?php echo $_code ?>_input1" class="required"><em>*</em><?php echo $this->__('Input 1') ?></label>
+		<div class="input-box">
+		<input id="input1" size="10" type="text" name="payment[input1]" readonly="readonly" value="1"/>
+		</div>
+    </li>
+    <li>
+		<label  for="<?php echo $_code ?>_input2" class="required"><em>*</em><?php echo $this->__('Input 2') ?></label>
+		<div class="input-box">
+		<input id="input2" size="20" type="text" name="payment[input2]" readonly="readonly" value="<?php echo $gross; ?>"/>
+		</div>
+    </li>
+    <li>
+		<label  for="<?php echo $_code ?>_input3" class="required"><em>*</em><?php echo $this->__('Input 3') ?></label>
+		<div class="input-box">
+		<input id="input3" size="5" type="text" name="payment[input3]" readonly="readonly" value=""/>
+		</div>
+    </li>
+    <li>
+		<label  for="<?php echo $_code ?>_input3" class="required"><em>*</em><?php echo $this->__('Challenge Token') ?></label>
+		<div class="input-box">
+		<input id="token" size="10" type="text" name="payment[token]"  value=""/>
+		</div>
+    </li>
+</ul>
