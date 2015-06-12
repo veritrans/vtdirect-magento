@@ -13,7 +13,7 @@
 
 require_once(Mage::getBaseDir('lib') . '/veritrans-php/Veritrans.php');
 
-class Veritrans_permatava_PaymentController
+class Veritrans_Permatava_PaymentController
     extends Mage_Core_Controller_Front_Action {
 
   /**
