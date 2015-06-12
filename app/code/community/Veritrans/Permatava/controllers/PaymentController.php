@@ -75,7 +75,8 @@ class Veritrans_Permatava_PaymentController
 
         // Set all required params and send emails
 		if(!empty($virtual)){
-			$virtual="<h4>Please transfer IDR ".$amount." payment with transfer method to this Permata bank virtual account number:  ".$virtual."</h4>";
+      $url = "https://support.veritrans.co.id/hc/en-us/articles/204700774-How-to-pay-with-Bank-transfer-Permata-Virtual-Account";
+			$virtual="<h4>Please transfer IDR ".$amount." payment with transfer method to this Permata bank virtual account number:  ".$virtual."</h4><br/> <h4>Payment instruction can be viewed <a href=".$url.">here</a></h4>";
 		}
         $mailer->setSender(Mage::getStoreConfig('sales_email/order/identity', $storeId));
         $mailer->setStoreId($storeId);
