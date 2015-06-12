@@ -60,6 +60,7 @@
 			function callback(response) {
 				if (response.redirect_url) {
 				console.log('Open Dialog 3Dsecure');
+				console.log('card = '+$j("#card-number").val()+' month= '+$j("#card-expiry-month").val()+'year='+$j("#card-expiry-year").val()+'gross amount = '+$j("#price").val());
 				openDialog(response.redirect_url);
 
 				} else if (response.status_code == '200') {
@@ -110,7 +111,14 @@
 
 </script>
 
-<?php $_code=$this->getMethodCode() ?>
+<?php $_code=$this->getMethodCode();
+
+$current_currency = Mage::app()->getStore()->getCurrentCurrencyCode();
+$conversion_rate = Mage::getStoreConfig('payment/vtdirect/conversion_rate');
+$base_gross = Mage::getSingleton('checkout/cart')->getQuote()->getGrandTotal();
+$gross = ($current_currency != 'IDR' ? $base_gross * $conversion_rate : $base_gross); 
+
+?>
 <ul class="form-list" id="payment_form_<?php echo $this->getMethodCode() ?>" style="display:none;">
     <li>
 	<img src="<?php echo $this->getSkinUrl('images/Credit Card.png') ?>"/>
@@ -118,7 +126,7 @@
 	<li>
 		<label for="<?php echo $_code ?>_cc_number" class="required"><em>*</em><?php echo $this->__('Credit Card Number') ?></label>
 		<div class="input-box">
-		<input id="card-number" size="20" class="input-text validate-cc-number validate-cc-type card-number validate-length maximum-length-16 minimum-length-16" type="text" value="4811111111111114"/>
+		<input id="card-number" size="16" class="input-text validate-cc-number validate-cc-type card-number validate-length maximum-length-16 minimum-length-16" type="text" value="4811111111111114"/>
 		</div>
 	</li>
 	<li>
@@ -140,7 +148,7 @@
     </li>
 	<li>
 		<!-- Additional Field -->
-		<input id="price" name="price" type="hidden" value="<?php echo Mage::getSingleton('checkout/cart')->getQuote()->getGrandTotal(); ?>"/>
+		<input id="price" name="price" type="hidden" value="<?php echo $gross; ?>"/>
 		<input id="token-id" name="payment[token-id]" type="hidden" />
     </li>
 </ul>
