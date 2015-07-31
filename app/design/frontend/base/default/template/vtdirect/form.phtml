@@ -10,7 +10,8 @@
 <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.css" media="screen" />
 
 <script type="text/javascript">
-
+	
+	var $j=jQuery.noConflict();
 	var env = "<?php echo Mage::getStoreConfig('payment/vtdirect/environment'); ?>";
 	var js  = '';
 
