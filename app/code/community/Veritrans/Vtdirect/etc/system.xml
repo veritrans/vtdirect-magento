@@ -30,7 +30,6 @@
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
                 </title>
-                
                 <client_key_v2>
                   <label>Client Key</label>                  
                   <config_path>payment/vtdirect/client_key_v2</config_path>
@@ -80,6 +79,45 @@
                   <show_in_store>1</show_in_store>
                   <comment>Current rate to idr</comment>
                 </conversion_rate>
+                <test_card>
+                  <label>Testing Credit Card</label>
+                  <config_path>payment/vtdirect/test_card</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>11</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <comment>3ds card : 4811111111111114 normal card :4011111111111112</comment>
+                </test_card>
+                <test_month>
+                  <label>Testing Credit Card Month</label>
+                  <config_path>payment/vtdirect/test_month</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>12</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <comment>month: 01 - 12</comment>
+                </test_month>
+                <test_year>
+                  <label>Testing Credit Card Year</label>
+                  <config_path>payment/vtdirect/test_year</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>13</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <comment>input any year after this year</comment>
+                </test_year>
+                <test_cvv>
+                  <label>Testing Credit Card CVV</label>
+                  <config_path>payment/vtdirect/test_cvv</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>14</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </test_cvv>
                 <error_message>
                   <label>Error Message</label>
                   <config_path>payment/vtdirect/error_message</config_path>
