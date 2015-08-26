@@ -35,7 +35,7 @@
     <payment>
       <vtdirect>
         <model>vtdirect/standard</model>
-        <active>1</active>
+        <active>0</active>
         <order_status>pending</order_status>
         <title>Credit Card</title>
         <payment_action>sale</payment_action>
