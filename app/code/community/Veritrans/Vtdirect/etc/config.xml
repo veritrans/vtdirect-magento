@@ -35,7 +35,7 @@
     <payment>
       <vtdirect>
         <model>vtdirect/standard</model>
-        <active>1</active>
+        <active>0</active>
         <order_status>pending</order_status>
         <title>Credit Card</title>
         <payment_action>sale</payment_action>
@@ -45,6 +45,10 @@
         <conversion_rate>10000</conversion_rate>
         <enable_3d_secure>true</enable_3d_secure>
         <environment>sandbox</environment>
+        <test_card>4811111111111114</test_card>
+        <test_month>12</test_month>
+        <test_year>2020</test_year>
+        <test_cvv>123</test_cvv>
         <bank>bni</bank>
       </vtdirect>
     </payment>

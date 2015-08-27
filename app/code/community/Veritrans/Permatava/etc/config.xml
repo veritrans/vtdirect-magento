@@ -35,7 +35,7 @@
     <payment>
       <permatava>
         <model>permatava/standard</model>
-        <active>1</active>
+        <active>0</active>
         <order_status>pending</order_status>
         <title>Bank Transfer</title>
         <payment_action>sale</payment_action>

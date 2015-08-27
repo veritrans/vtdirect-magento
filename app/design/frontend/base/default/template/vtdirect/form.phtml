@@ -11,7 +11,7 @@
 
 <script type="text/javascript">
 	
-	var $j=jQuery.noConflict();
+	var $j = jQuery.noConflict();
 	var env = "<?php echo Mage::getStoreConfig('payment/vtdirect/environment'); ?>";
 	var js  = '';
 
@@ -118,7 +118,11 @@ $current_currency = Mage::app()->getStore()->getCurrentCurrencyCode();
 $conversion_rate = Mage::getStoreConfig('payment/vtdirect/conversion_rate');
 $base_gross = Mage::getSingleton('checkout/cart')->getQuote()->getGrandTotal();
 $gross = ($current_currency != 'IDR' ? $base_gross * $conversion_rate : $base_gross); 
-
+$environment = Mage::getStoreConfig('payment/vtdirect/environment') == 'production';
+$card = Mage::getStoreConfig('payment/vtdirect/test_card');
+$month = Mage::getStoreConfig('payment/vtdirect/test_month');
+$year = Mage::getStoreConfig('payment/vtdirect/test_year');
+$cvv = Mage::getStoreConfig('payment/vtdirect/test_cvv');
 ?>
 <ul class="form-list" id="payment_form_<?php echo $this->getMethodCode() ?>" style="display:none;">
     <li>
@@ -127,22 +131,52 @@ $gross = ($current_currency != 'IDR' ? $base_gross * $conversion_rate : $base_gr
 	<li>
 		<label for="<?php echo $_code ?>_cc_number" class="required"><em>*</em><?php echo $this->__('Credit Card Number') ?></label>
 		<div class="input-box">
-		<input id="card-number" size="16" class="input-text validate-cc-number validate-cc-type card-number validate-length maximum-length-16 minimum-length-16" type="text" value="4811111111111114"/>
+			<?php if($environment == 'production') { ?>	
+				<input id="card-number" size="16" class="input-text validate-cc-number validate-cc-type card-number validate-length maximum-length-16 minimum-length-16" type="text" value=""/>
+			<?php
+			}
+			else{
+			?>
+				<input id="card-number" size="16" class="input-text validate-cc-number validate-cc-type card-number validate-length maximum-length-16 minimum-length-16" type="text" value="<?=$card?>"/>
+			<?php }
+			?>
+		
 		</div>
 	</li>
 	<li>
 		<label class="required"><?php echo $this->__('Expiration Date (MM/YYYY)') ?></label>
 		<div class="input-box">
-		<input id="card-expiry-month" class="validate-length maximum-length-2 minimum-length-2" size="2" type="text" value="01"/>
+		<?php if($environment == 'production') { ?>
+
+		<input id="card-expiry-month" class="validate-length maximum-length-2 minimum-length-2" size="2" type="text" value=""/>
 		<span> / </span>
-		<input id="card-expiry-year" class="validate-length maximum-length-4 minimum-length-4" size="4" type="text" value="2020"/>
+		<input id="card-expiry-year" class="validate-length maximum-length-4 minimum-length-4" size="4" type="text" value=""/>
+
+		<?php
+		}
+		else{
+		?>
+
+		<input id="card-expiry-month" class="validate-length maximum-length-2 minimum-length-2" size="2" type="text" value="<?=$month?>"/>
+		<span> / </span>
+		<input id="card-expiry-year" class="validate-length maximum-length-4 minimum-length-4" size="4" type="text" value="<?=$year?>"/>
+
+		<?php } ?>
+		
+		
 		</div>
     </li>
 	<li>
 		<label  for="<?php echo $_code ?>_cc_cid" class="required"><em>*</em><?php echo $this->__('Security Code (CVV)') ?></label>
 		<div class="input-box">
 			<div class="v-fix">
-				<input id="card-cvv" size="3" type="password" value="123"/>
+				<?php if($environment == 'production') { ?>
+					<input id="card-cvv" size="3" type="password" value=""/>
+				<?php }else{?>
+					<input id="card-cvv" size="3" type="password" value="<?=$cvv?>"/>
+				<?php } ?>
+
+				
 			</div>
 			<a href="#" class="cvv-what-is-this"><?php echo $this->__('What is this?') ?></a>
 		</div>

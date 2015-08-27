@@ -29,7 +29,6 @@ class Veritrans_Vtdirect_PaymentController
   // redirecting to Veritrans payment page.
   public function redirectAction() {
   
-    Mage::log('masuk ke payment controller, redirect action',null,'vtdirect_veritrans.log',true);
     $orderIncrementId = $this->_getCheckout()->getLastRealOrderId();
     $order = Mage::getModel('sales/order')
         ->loadByIncrementId($orderIncrementId);
@@ -236,24 +235,55 @@ class Veritrans_Vtdirect_PaymentController
   // after processing the customer's payment, we will not update to success
   // because success is valid when notification (security reason)
   public function responseAction() {
-    //var_dump($_POST); use for debugging value.
+
     if($_GET['order_id']) {
       $orderId = $_GET['order_id']; // Generally sent by gateway
       $status = $_GET['status_code'];
+      //Mage::log('orderid= '.$orderId.'status = '.$status,null,'vtdirect_veritrans.log',true);
       if($status == '200' && !is_null($orderId) && $orderId != '') {
         // Redirected by Veritrans, if ok
+        //Mage::log('masuk if status 200, order id gak null dan order id gak empty',null,'vtdirect_veritrans.log',true);
         Mage::getSingleton('checkout/session')->unsQuoteId();
         Mage_Core_Controller_Varien_Action::_redirect(
             'checkout/onepage/success', array('_secure'=>false));
       }
       else {
         // There is a problem in the response we got
+        
         $this->cancelAction();
         Mage_Core_Controller_Varien_Action::_redirect(
             'checkout/onepage/failure', array('_secure'=>true));
       }
     }
+    else if($_POST['response'])
+    {
+      $response = json_decode($_POST['response']);
+
+      //Mage::log(print_r($response,TRUE),null,'vtdirect_veritrans.log',true);
+
+      $status_code = $response->status_code;
+      $orderId = $response->order_id;
+      
+      //Mage::log('status_code = '.$status_code.'order id= '.$orderId,null,'vtdirect_veritrans.log',true);
+      
+        if($status_code == '200' && !is_null($orderId) && $orderId != '') {
+            //redirected by veritrans if okay.
+            //Mage::log('status 200, order id not null',null,'vtdirect_veritrans.log',true);
+            Mage::getSingleton('checkout/session')->unsQuoteId();
+            //Mage::log(print_r(Mage::getSingleton('checkout/session')->unsQuoteId(),TRUE),null,'vtdirect_veritrans.log',true);
+
+            Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/success', array('_secure'=>false));
+
+        }
+        else {
+        // There is a problem in the response we got
+        $this->cancelAction();
+        Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/failure', array('_secure'=>true));
+        }
+
+    }
     else{
+      Mage::log('masuk ke else artinya ga ada order id',null,'vtdirect_veritrans.log',true);
       Mage_Core_Controller_Varien_Action::_redirect('');
     }
   }
@@ -264,15 +294,13 @@ class Veritrans_Vtdirect_PaymentController
   public function notificationAction() {
     error_log('payment notification');
 
-    Veritrans_Config::$serverKey =
-        Mage::getStoreConfig('payment/vtdirect/server_key_v2');
+    Veritrans_Config::$isProduction = Mage::getStoreConfig('payment/vtweb/environment') == 'production' ? true : false;
+    Veritrans_Config::$serverKey = Mage::getStoreConfig('payment/vtdirect/server_key_v2');
     $notif = new Veritrans_Notification();
-    Mage::log('notif = '.print_r($notif,true),null,'vtdirect_veritrans.log',true);
+    //Mage::log('notif = '.print_r($notif,true),null,'vtdirect_veritrans.log',true);
     
     $order = Mage::getModel('sales/order');
     $order->loadByIncrementId($notif->order_id);
-
-    if($order->getStatus()  && ($order->getStatus() == 'new' || $order->getStatus() == 'pending')) {
 
         $transaction = $notif->transaction_status;
         $fraud = $notif->fraud_status;
@@ -303,9 +331,25 @@ class Veritrans_Vtdirect_PaymentController
        $order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
     }   
    else if ($transaction == 'settlement') {
-     $order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
-     $order->sendOrderUpdateEmail(true,
-            'Thank you, your payment is successfully processed.');
+
+          if($payment_type != 'credit_card'){
+
+              $invoice = $order->prepareInvoice()
+                  ->setTransactionId($order->getId())
+                  ->addComment('Payment successfully processed by Veritrans.')
+                  ->register()
+                  ->pay();
+
+                $transaction_save = Mage::getModel('core/resource_transaction')
+                  ->addObject($invoice)
+                  ->addObject($invoice->getOrder());
+
+                $transaction_save->save();
+                
+                $order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
+                $order->sendOrderUpdateEmail(true,
+                'Thank you, your payment is successfully processed.');
+          }     
     }
    else if ($transaction == 'pending') {
      $order->setStatus(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
@@ -319,9 +363,6 @@ class Veritrans_Vtdirect_PaymentController
       $order->setStatus(Mage_Sales_Model_Order::STATUS_FRAUD);
     }
     $order->save();          	
-    }
-
-    error_log($logs);
   }
 
   // The cancel action is triggered when an order is to be cancelled
@@ -454,7 +495,7 @@ class Veritrans_Vtdirect_PaymentController
       'IM' => 'IMN',
       'IL' => 'ISR',
       'IT' => 'ITA',
-      'CI' => '',
+      'CI' => 'CIV',
       'JM' => 'JAM',
       'JP' => 'JPN',
       'JE' => 'JEY',
@@ -548,7 +589,7 @@ class Veritrans_Vtdirect_PaymentController
       'SO' => 'SOM',
       'ZA' => 'ZAF',
       'GS' => 'SGS',
-      'KR' => '',
+      'KR' => 'KOR',
       'SS' => 'SSD',
       'ES' => 'ESP',
       'LK' => 'LKA',

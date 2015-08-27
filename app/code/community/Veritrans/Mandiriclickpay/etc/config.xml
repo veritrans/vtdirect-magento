@@ -35,7 +35,7 @@
     <payment>
       <mandiriclickpay>
         <model>mandiriclickpay/standard</model>
-        <active>1</active>
+        <active>0</active>
         <order_status>pending</order_status>
         <title>Mandiri Clickpay</title>
         <conversion_rate>10000</conversion_rate>

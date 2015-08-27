@@ -45,7 +45,8 @@
 $current_currency = Mage::app()->getStore()->getCurrentCurrencyCode();
 $conversion_rate = Mage::getStoreConfig('payment/mandiriclickpay/conversion_rate');
 $base_gross = Mage::getSingleton('checkout/cart')->getQuote()->getGrandTotal();
-$gross = ($current_currency != 'IDR' ? $base_gross * $conversion_rate : $base_gross); 
+$gross = ($current_currency != 'IDR' ? $base_gross * $conversion_rate : $base_gross);
+$environment = Mage::getStoreConfig('payment/mandiriclickpay/environment') == 'production';
 
  ?>
 
@@ -67,8 +68,14 @@ $gross = ($current_currency != 'IDR' ? $base_gross * $conversion_rate : $base_gr
     </ol>	
 		<label for="<?php echo $_code ?>_cc_number" class="required"><em>*</em><?php echo $this->__('Card Number') ?></label>
 		<div class="input-box">
-		<input id="card-number-mandiri" size="16" class="input-text card-number validate-length maximum-length-16 minimum-length-16" name="payment[cc_number]" type="text" value="4111111111111111"/>
-		</div>
+    <?php if($environment == 'production') { ?> 
+		<input id="card-number-mandiri" size="16" class="input-text card-number validate-length maximum-length-16 minimum-length-16" name="payment[cc_number]" type="text" value=""/>
+    <?php }else{?>
+    <input id="card-number-mandiri" size="16" class="input-text card-number validate-length maximum-length-16 minimum-length-16" name="payment[cc_number]" type="text" value="4111111111111111"/>
+    <?php } ?>
+
+		
+    </div>
 	</li>
 	<li>
 		<label  for="<?php echo $_code ?>_input1" class="required"><em>*</em><?php echo $this->__('Input 1') ?></label>
@@ -91,7 +98,11 @@ $gross = ($current_currency != 'IDR' ? $base_gross * $conversion_rate : $base_gr
     <li>
 		<label  for="<?php echo $_code ?>_input3" class="required"><em>*</em><?php echo $this->__('Challenge Token') ?></label>
 		<div class="input-box">
+    <?php if($environment == 'production') { ?> 
 		<input id="token" size="10" type="text" name="payment[token]"  value=""/>
+    <?php }else{?>
+    <input id="token" size="10" type="text" name="payment[token]"  value="000000"/>
+    <?php } ?>
 		</div>
     </li>
 </ul>
