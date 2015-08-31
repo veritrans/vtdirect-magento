@@ -10,6 +10,8 @@ Veritrans payment gateway is an online payment gateway that is highly concerned 
 Payment Method Feature:
 
 - Credit Card
+- Mandiri Clickpay
+- Atm Transfer (permata Virtual Account)
 
 ### Installation
 
@@ -17,6 +19,7 @@ Payment Method Feature:
 
 * This plugin is tested with Magento version 1.9
 * PHP version 5.4 or greater
+* Magento standard checkout (Onepage Checkout)
 
 #### Manual Instalation
 
