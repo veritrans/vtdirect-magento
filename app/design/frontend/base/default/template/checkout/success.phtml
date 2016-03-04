@@ -46,11 +46,16 @@
 <?php endif;?>
 
 <?php 
-$va_number=Mage::getSingleton('core/session')->getVA();
+$va_number = Mage::getSingleton('core/session')->getVA();
+$bill_key = Mage::getSingleton('core/session')->getBillkey();
+$bca_va = Mage::getSingleton('core/session')->getBcaVa();
+$biller_code = Mage::getSingleton('core/session')->getBillercode();
+Mage::log('success.phtml. bill key = '.$bill_key.'bill code = '.$bill_code,null,'vtdirect_veritrans.log',TRUE);
 $gross_amount = Mage::getSingleton('core/session')->getAmount();
 Mage::getSingleton('core/session')->unsVA();
 Mage::getSingleton('core/session')->unsAmount();
 $url = "https://support.veritrans.co.id/hc/en-us/articles/204700774-How-to-pay-with-Bank-transfer-Permata-Virtual-Account";
+
 	if(!empty($va_number)){ ?>
 
     <div>
@@ -59,6 +64,21 @@ $url = "https://support.veritrans.co.id/hc/en-us/articles/204700774-How-to-pay-w
     </div>
         
 <?php	
+    }else if(!empty($bill_key) && !empty($biller_code)){?>
+
+    <div>
+        <br/>Please Pay with Mandiri ATM IDR <?=$gross_amount?>. Your <b>Bill Key</b> is <b><?=$bill_key?></b> and your <b>Bill Code</b> is <b><?=$biller_code?></b>.  
+        <br/> Please read the payment instruction at <a href="https://support.veritrans.co.id/hc/en-us/articles/215242768-How-to-pay-with-Mandiri-Bill-Payment-Mandiri-Virtual-Account-" >here</a></h4>
+    </div>
+
+<?php
+    }else if(!empty($bca_va)){?>
+    
+    <div>
+        <br/>Please Pay with BCA ATM IDR <?=$gross_amount?> to this BCA virtual Account number : <b><?=$bca_va?></b>
+        <br/> Please read the payment instruction at <a href="https://support.veritrans.co.id/hc/id/articles/217187018-Bagaimana-cara-membayar-menggunakan-BCA-Virtual-Account-" >here</a></h4>
+    </div>    
+<?php        
     }
 ?>
 
