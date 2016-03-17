@@ -294,7 +294,7 @@ class Veritrans_Vtdirect_PaymentController
   public function notificationAction() {
     error_log('payment notification');
 
-    Veritrans_Config::$isProduction = Mage::getStoreConfig('payment/vtweb/environment') == 'production' ? true : false;
+    Veritrans_Config::$isProduction = Mage::getStoreConfig('payment/vtdirect/environment') == 'production' ? true : false;
     Veritrans_Config::$serverKey = Mage::getStoreConfig('payment/vtdirect/server_key_v2');
     $notif = new Veritrans_Notification();
     //Mage::log('notif = '.print_r($notif,true),null,'vtdirect_veritrans.log',true);
