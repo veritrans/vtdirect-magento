@@ -12,6 +12,10 @@ Payment Method Feature:
 - Credit Card
 - Mandiri Clickpay
 - Atm Transfer (permata Virtual Account)
+- Mandiri Bill Payment (Mandiri Virtual Account)
+- Virtual Account BCA
+- CIMB Clicks
+- BCA Klikpay
 
 ### Installation
 
@@ -38,6 +42,9 @@ Payment Method Feature:
 6. Login into your Veritrans account and change the Payment Notification URL in Settings to `http://[your shop's homepage]/vtdirect/payment/notification`.
 
 7. Login into your Veritrans account and change the Payment Finish URL in Settings to `http://[your shop's homepage]/vtdirect/payment/response`.
+
+#### Landing Page for CIMB Click & BCA Klikpay
+These method may require you to modified this module, since the bank need a certain messages shown on the landing page. Please look at [module_name]/controller/payment/response. Combine them and put it on vtdirect/controller/payment/response if needed. 
 
 #### Get help
 
