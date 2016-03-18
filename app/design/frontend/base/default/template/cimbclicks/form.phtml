@@ -1,0 +1,24 @@
+<?php
+/**
+ * Veritrans VT Direct virtual account Model Standard
+ *
+ * @category   Mage
+ * @package    vtvirtual/form.phtml
+ * @author     denny
+ * this template is rendered when Veritrans payment method is chosen. This is description about Veritrans Payment Method
+ */
+?>
+
+<ul class="form-list" id="payment_form_<?php echo $this->getMethodCode() ?>" style="display:none;">
+    <li>
+	<img src="<?php echo $this->getSkinUrl('images/CIMB Clicks.png') ?>"/> <br/>
+	</li>
+	
+	<ol>
+      <li>1. Please make sure that you have a User ID for CIMB Clicks and have registered your mPIN before going through with the payment.</li>
+	  <li>2. Payment via CIMB Clicks will be processed online and your CIMB bank account balance will be deducted automatically based on your total amount.</li>
+	  <li>3. Transaction will be cancelled if payment is not completed within 2 hours.</li>
+	  <li>4. Please make sure that there is no pop-up blocker on your browser. </li>
+    </ol>
+	
+</ul>

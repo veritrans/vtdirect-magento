@@ -1,21 +1,19 @@
 <?php
 /**
- * Veritrans VT Direct Payment Controller
+ * Veritrans VT Direct permata virtual account Payment Controller
  *
  * @category   Mage
- * @package    Mage_Veritrans_Vtdirect_PaymentController
- * @author     denny
+ * @package    Mage_Veritrans_Permatava_PaymentController
  * This class is used for handle redirection after placing order.
  * function redirectAction -> charge Veritrans VT Direct
  * function responseAction -> when payment at Veritrans VT Direct is completed or
  * failed, the page will be redirected to this function,
  * you must set this url in your Veritrans MAP merchant account.
- * http://yoursite.com/vtdirect/payment/notification
  */
 
 require_once(Mage::getBaseDir('lib') . '/veritrans-php/Veritrans.php');
 
-class Veritrans_Vtdirect_PaymentController
+class Veritrans_Bcaklikpay_PaymentController
     extends Mage_Core_Controller_Front_Action {
 
   /**
@@ -24,29 +22,94 @@ class Veritrans_Vtdirect_PaymentController
   protected function _getCheckout() {
     return Mage::getSingleton('checkout/session');
   }
+  // new email order
+	public function send_new_order_mail($storeId, $order, $billing , $payment, $email, $name, $isGuest, $virtual='', $amount){
+		$storeId=Mage::app()->getStore()->getStoreId();
+		$copyTo = Mage::getStoreConfig('sales_email/order/copy_to', $storeId);
+        $copyMethod = Mage::getStoreConfig('sales_email/order/copy_method', $storeId);
+		// Start store emulation process
+        $appEmulation = Mage::getSingleton('core/app_emulation');
+        $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
 
+        try {
+            // Retrieve specified view block from appropriate design package (depends on emulated store)
+            $paymentBlock = Mage::helper('payment')->getInfoBlock($payment)
+                ->setIsSecureMode(true);
+            $paymentBlock->getMethod()->setStore($storeId);
+            $paymentBlockHtml = $paymentBlock->toHtml();
+        } catch (Exception $exception) {
+            // Stop store emulation process
+            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+            throw $exception;
+        }
+
+        // Stop store emulation process
+        $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+
+        // Retrieve corresponding email template id and customer name
+        if ($isGuest) {
+            $templateId = Mage::getStoreConfig('sales_email/order/guest_template', $storeId);
+        } else {
+            $templateId = Mage::getStoreConfig('sales_email/order/template', $storeId);
+        }
+
+		$mailer = Mage::getModel('core/email_template_mailer');
+        $emailInfo = Mage::getModel('core/email_info');
+        $emailInfo->addTo($email, $name);
+        if ($copyTo && $copyMethod == 'bcc') {
+            // Add bcc to customer email
+            foreach ($copyTo as $email) {
+                $emailInfo->addBcc($email);
+            }
+        }
+        $mailer->addEmailInfo($emailInfo);
+
+        // Email copies are sent as separated emails if their copy method is 'copy'
+        if ($copyTo && $copyMethod == 'copy') {
+            foreach ($copyTo as $email) {
+                $emailInfo = Mage::getModel('core/email_info');
+                $emailInfo->addTo($email);
+                $mailer->addEmailInfo($emailInfo);
+            }
+        }
+
+        // Set all required params and send emails
+		if(!empty($virtual)){
+      $url = "https://support.veritrans.co.id/hc/en-us/articles/204700774-How-to-pay-with-Bank-transfer-Permata-Virtual-Account";
+			$virtual="<h4>Please transfer IDR ".$amount." payment with transfer method to this Permata bank virtual account number:  ".$virtual."</h4><br/> <h4>Payment instruction can be viewed <a href=".$url.">here</a></h4>";
+		}
+        $mailer->setSender(Mage::getStoreConfig('sales_email/order/identity', $storeId));
+        $mailer->setStoreId($storeId);
+        $mailer->setTemplateId($templateId);
+        $mailer->setTemplateParams(array(
+                'order'        => $order,
+                'virtual'      => $virtual,
+                'billing'      => $billing,
+                'payment_html' => $paymentBlockHtml
+            )
+        );
+        $mailer->send();
+	}
+	
   // The redirect action is triggered when someone places an order,
   // redirecting to Veritrans payment page.
   public function redirectAction() {
-  
+
+    Mage::log("masuk bcava redirect action",null,'bcava_request.log');
     $orderIncrementId = $this->_getCheckout()->getLastRealOrderId();
     $order = Mage::getModel('sales/order')
         ->loadByIncrementId($orderIncrementId);
     $sessionId = Mage::getSingleton('core/session');
-
+	
 	/* need to set payment data to Mage::getSingleton('core/session')->setPaymentData(); when checkout */
-
-	$pay= Mage::getSingleton('core/session')->getPaymentData();
-
-    $payment_type = Mage::getStoreConfig('payment/vtdirect/payment_types');
-
+	 
     Veritrans_Config::$isProduction =
-        Mage::getStoreConfig('payment/vtdirect/environment') == 'production'
+        Mage::getStoreConfig('payment/bcaklikpay/environment') == 'production'
         ? true : false;
 
     Veritrans_Config::$serverKey =
-        Mage::getStoreConfig('payment/vtdirect/server_key_v2');
-
+        Mage::getStoreConfig('payment/bcaklikpay/server_key_v2');
+    
 
     $transaction_details = array();
     $transaction_details['order_id'] = $orderIncrementId;
@@ -111,12 +174,12 @@ class Veritrans_Vtdirect_PaymentController
           'quantity' => $each->getQtyToInvoice(),
           'name'     => substr($each->getName(),0,50)
         );
-
+      
       if ($item['quantity'] == 0) continue;
       // error_log(print_r($each->getProductOptions(), true));
       $item_details[] = $item;
     }
-
+    
     $num_products = count($item_details);
 
     unset($each);
@@ -140,7 +203,7 @@ class Veritrans_Vtdirect_PaymentController
         );
       $item_details[] =$shipping_item;
     }
-
+    
     if ($shipping_tax_amount > 0) {
       $shipping_tax_item = array(
           'id' => 'SHIPPING_TAX',
@@ -166,7 +229,7 @@ class Veritrans_Vtdirect_PaymentController
     if ($current_currency != 'IDR') {
       $conversion_func = function ($non_idr_price) {
           return $non_idr_price *
-              Mage::getStoreConfig('payment/vtdirect/conversion_rate');
+              Mage::getStoreConfig('payment/bcava/conversion_rate');
         };
       foreach ($item_details as &$item) {
         $item['price'] =
@@ -181,188 +244,76 @@ class Veritrans_Vtdirect_PaymentController
       unset($each);
     }
 
+    //generate VA number based on unix timestamp
+    $va = new DateTime();
+    
 
+    //inquiry free text
+    $description = 'Pembayaran untuk order # '.$orderIncrementId;
+    
     $payloads = array();
     $payloads['transaction_details'] = $transaction_details;
     $payloads['item_details']        = $item_details;
     $payloads['customer_details']    = $customer_details;
-    $payloads['payment_type']		 = 'credit_card';
-	  $payloads['credit_card']		 = array(
-											'token_id'=>$pay['token-id'],
-											'bank'=>Mage::getStoreConfig('payment/vtdirect/bank'),
-											//'installment_term' => '12'
+    $payloads['payment_type']		 = 'bca_klikpay';
+	  $payloads['bca_klikpay']		 = array(
+											'type' => 1,
+                      'description' => $description
 										);
 
+   
     try {
+       Mage::log(print_r($payloads,TRUE),null,'bcaklikpay_request.log',true);
       $response = Veritrans_VtDirect::charge($payloads);
-      Mage::log('payloads= '.print_r($payloads,true),null,'vtdirect_veritrans.log',true);
-      Mage::log('response= '.print_r($response,true),null,'vtdirect_veritrans.log',true);
-	    
-      if($response->status_code=='200' || $response->status_code=='201') {
-        
-        if ($response->status_code=='200') {
-          $order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
-          $order->save();
-        } else {
-          $order->setStatus(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW);
-          $order->save();
-        }
-        // Redirected by Veritrans, if ok
-        Mage::getSingleton('checkout/session')->unsQuoteId();
+	  Mage::log(print_r($response,TRUE),null,'bcaklikpay_response.log',true);
 
-        //delete item from cart
-    		foreach( Mage::getSingleton('checkout/session')->getQuote()->getItemsCollection() as $item ){
-    			Mage::getSingleton('checkout/cart')->removeItem( $item->getId() )->save();
-    		}
+      $this->_redirectUrl($response->redirect_url);
 
-        Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/success', array('_secure'=>true));
+    Mage::getSingleton('checkout/session')->unsQuoteId();
+		//remove item
+      foreach( Mage::getSingleton('checkout/session')->getQuote()->getItemsCollection() as $item ){
+            Mage::getSingleton('checkout/cart')->removeItem( $item->getId() )->save();
       }
-      else {
-        // There is a problem in the response we got
-        $this->cancelAction();
-        Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/', array('_secure'=>true));
-      }
+		
     }
     catch (Exception $e) {
-		Mage::log($e,null,'vtdirect_veritrans.log',true);
-    error_log($e);
-      error_log($e->getMessage());
+    Mage::log($e,null,'bcaklikpay_error.log',true);     
+    error_log($e->getMessage());
 	  Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/failure', array('_secure'=>true));
     }
   }
 
-  // The response action is triggered when your gateway sends back a response
-  // after processing the customer's payment, we will not update to success
-  // because success is valid when notification (security reason)
-  public function responseAction() {
+  public function responseAction()
+  {
 
-    if($_GET['order_id']) {
-      $orderId = $_GET['order_id']; // Generally sent by gateway
-      $status = $_GET['status_code'];
-      //Mage::log('orderid= '.$orderId.'status = '.$status,null,'vtdirect_veritrans.log',true);
-      if($status == '200' && !is_null($orderId) && $orderId != '') {
-        // Redirected by Veritrans, if ok
-        //Mage::log('masuk if status 200, order id gak null dan order id gak empty',null,'vtdirect_veritrans.log',true);
-        Mage::getSingleton('checkout/session')->unsQuoteId();
-        Mage_Core_Controller_Varien_Action::_redirect(
-            'checkout/onepage/success', array('_secure'=>false));
-      }
-      else {
-        // There is a problem in the response we got
-        
-        $this->cancelAction();
-        Mage_Core_Controller_Varien_Action::_redirect(
-            'checkout/onepage/failure', array('_secure'=>true));
-      }
-    }
-    else if($_POST['response'])
-    {
-      $response = json_decode($_POST['response']);
-
-      //Mage::log(print_r($response,TRUE),null,'vtdirect_veritrans.log',true);
-
-      $status_code = $response->status_code;
-      $orderId = $response->order_id;
-      
-      //Mage::log('status_code = '.$status_code.'order id= '.$orderId,null,'vtdirect_veritrans.log',true);
-      
-        if($status_code == '200' && !is_null($orderId) && $orderId != '') {
-            //redirected by veritrans if okay.
-            //Mage::log('status 200, order id not null',null,'vtdirect_veritrans.log',true);
-            Mage::getSingleton('checkout/session')->unsQuoteId();
-            //Mage::log(print_r(Mage::getSingleton('checkout/session')->unsQuoteId(),TRUE),null,'vtdirect_veritrans.log',true);
-
-            Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/success', array('_secure'=>false));
-
-        }
-        else {
-        // There is a problem in the response we got
-        $this->cancelAction();
-        Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/failure', array('_secure'=>true));
-        }
-
+    $guid = $_GET['id'];
+    Mage::log('guid = '.$guid,null,'bcaklikpay_response.log',true);
+    Veritrans_Config::$isProduction = Mage::getStoreConfig('payment/bcava/environment') == 'production' ? true : false;
+    Veritrans_Config::$serverKey = Mage::getStoreConfig('payment/bcava/server_key_v2');
+    $status = Veritrans_Transaction::status($guid);
+    Mage::log(print_r($status,TRUE),null,'bcaklikpay_response.log',true);
+    $template = '';
+    if($res->transaction_status == "cancel" || $res->transaction_status == "pending" || $res->transaction_status == "failure"){
+      $template = 'bcaklikpay/failure.phtml';
     }
     else{
-      Mage::log('masuk ke else artinya ga ada order id',null,'vtdirect_veritrans.log',true);
-      Mage_Core_Controller_Varien_Action::_redirect('');
+     $template = 'bcaklikpay/success.phtml';
     }
-  }
 
-  // Veritrans will send notification of the payment status, this is only way we
-  // make sure that the payment is successed, if success send the item(s) to
-  // customer :p
-  public function notificationAction() {
-    error_log('payment notification');
-
-    Veritrans_Config::$isProduction = Mage::getStoreConfig('payment/vtdirect/environment') == 'production' ? true : false;
-    Veritrans_Config::$serverKey = Mage::getStoreConfig('payment/vtdirect/server_key_v2');
-    $notif = new Veritrans_Notification();
-    //Mage::log('notif = '.print_r($notif,true),null,'vtdirect_veritrans.log',true);
+    //Get current layout state
+    $this->loadLayout();          
     
-    $order = Mage::getModel('sales/order');
-    $order->loadByIncrementId($notif->order_id);
-
-        $transaction = $notif->transaction_status;
-        $fraud = $notif->fraud_status;
-
-        if ($transaction == 'capture') {
-        if ($fraud == 'challenge') {
-          $order->setStatus(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW);
-        }
-        else if ($fraud == 'accept') {
-          $invoice = $order->prepareInvoice()
-            ->setTransactionId($order->getId())
-            ->addComment('Payment successfully processed by Veritrans.')
-            ->register()
-            ->pay();
-
-          $transaction_save = Mage::getModel('core/resource_transaction')
-            ->addObject($invoice)
-            ->addObject($invoice->getOrder());
-
-          $transaction_save->save();
-
-          $order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
-          $order->sendOrderUpdateEmail(true,
-              'Thank you, your payment is successfully processed.');
-        }
-    }
-    else if ($transaction == 'cancel' || $transaction == 'deny' ) {
-       $order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
-    }   
-   else if ($transaction == 'settlement') {
-
-          if($payment_type != 'credit_card'){
-
-              $invoice = $order->prepareInvoice()
-                  ->setTransactionId($order->getId())
-                  ->addComment('Payment successfully processed by Veritrans.')
-                  ->register()
-                  ->pay();
-
-                $transaction_save = Mage::getModel('core/resource_transaction')
-                  ->addObject($invoice)
-                  ->addObject($invoice->getOrder());
-
-                $transaction_save->save();
-                
-                $order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
-                $order->sendOrderUpdateEmail(true,
-                'Thank you, your payment is successfully processed.');
-          }     
-    }
-   else if ($transaction == 'pending') {
-     $order->setStatus(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
-     $order->sendOrderUpdateEmail(true,
-            'Thank you, your payment is successfully processed.');
-    }
-    else if ($transaction == 'cancel') {
-     $order->setStatus(Mage_Sales_Model_Order::STATE_CANCELED);
-    }
-    else {
-      $order->setStatus(Mage_Sales_Model_Order::STATUS_FRAUD);
-    }
-    $order->save();          	
+    $block = $this->getLayout()->createBlock(
+        'Mage_Core_Block_Template',
+        'bcaklikpay',
+        array('template' => $template)
+    );
+    
+    $this->getLayout()->getBlock('root')->setTemplate('page/1column.phtml');
+    $this->getLayout()->getBlock('content')->append($block);
+    $this->_initLayoutMessages('core/session'); 
+    $this->renderLayout();
+    
   }
 
   // The cancel action is triggered when an order is to be cancelled
